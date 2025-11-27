@@ -1,0 +1,197 @@
+﻿name: Release Build and Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          # Windows x64
+          - runtime: win-x64
+            platform: Windows
+            extension: .exe
+          # Linux x64
+          - runtime: linux-x64
+            platform: Linux
+            extension: ''
+          # macOS x64
+          - runtime: osx-x64
+            platform: macOS
+            extension: ''
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      
+      - name: Restore dependencies
+        run: dotnet restore ConsoleApp/MusicDecryptConsoleApp.csproj
+      
+      # Build Self-Contained version
+      - name: Publish Self-Contained ${{ matrix.platform }}
+        run: |
+          dotnet publish ConsoleApp/MusicDecryptConsoleApp.csproj \
+            -c Release \
+            -r ${{ matrix.runtime }} \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:PublishTrimmed=false \
+            -o ./publish-sc-${{ matrix.runtime }}
+      
+      # Build Framework-Dependent version
+      - name: Publish Framework-Dependent ${{ matrix.platform }}
+        run: |
+          dotnet publish ConsoleApp/MusicDecryptConsoleApp.csproj \
+            -c Release \
+            -r ${{ matrix.runtime }} \
+            --self-contained false \
+            -p:PublishSingleFile=true \
+            -o ./publish-fd-${{ matrix.runtime }}
+      
+      # Package Self-Contained version
+      - name: Package Self-Contained ${{ matrix.platform }}
+        run: |
+          cd publish-sc-${{ matrix.runtime }}
+          if [ "${{ matrix.runtime }}" = "win-x64" ]; then
+            zip -r ../MusicDecrypt-${{ matrix.runtime }}-selfcontained.zip .
+          else
+            tar -czf ../MusicDecrypt-${{ matrix.runtime }}-selfcontained.tar.gz .
+          fi
+          cd ..
+      
+      # Package Framework-Dependent version
+      - name: Package Framework-Dependent ${{ matrix.platform }}
+        run: |
+          cd publish-fd-${{ matrix.runtime }}
+          if [ "${{ matrix.runtime }}" = "win-x64" ]; then
+            zip -r ../MusicDecrypt-${{ matrix.runtime }}-framework-dependent.zip .
+          else
+            tar -czf ../MusicDecrypt-${{ matrix.runtime }}-framework-dependent.tar.gz .
+          fi
+          cd ..
+      
+      # Upload Self-Contained artifact
+      - name: Upload Self-Contained Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicDecrypt-${{ matrix.runtime }}-selfcontained
+          path: |
+            MusicDecrypt-${{ matrix.runtime }}-selfcontained.zip
+            MusicDecrypt-${{ matrix.runtime }}-selfcontained.tar.gz
+          if-no-files-found: ignore
+      
+      # Upload Framework-Dependent artifact
+      - name: Upload Framework-Dependent Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MusicDecrypt-${{ matrix.runtime }}-framework-dependent
+          path: |
+            MusicDecrypt-${{ matrix.runtime }}-framework-dependent.zip
+            MusicDecrypt-${{ matrix.runtime }}-framework-dependent.tar.gz
+          if-no-files-found: ignore
+  
+  create-release:
+    name: Create GitHub Release
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: Release ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          body: |
+            ## MusicDecrypt Release ${{ steps.get_version.outputs.version }}
+            
+            ### 📦 下载说明
+            
+            本次发布包含三个平台的两种部署方式，共六个安装包：
+            
+            #### Windows (x64)
+            - **Self-Contained**: `MusicDecrypt-win-x64-selfcontained.zip` - 包含 .NET 运行时，无需安装 .NET
+            - **Framework-Dependent**: `MusicDecrypt-win-x64-framework-dependent.zip` - 需要安装 .NET 10 运行时
+            
+            #### Linux (x64)
+            - **Self-Contained**: `MusicDecrypt-linux-x64-selfcontained.tar.gz` - 包含 .NET 运行时，无需安装 .NET
+            - **Framework-Dependent**: `MusicDecrypt-linux-x64-framework-dependent.tar.gz` - 需要安装 .NET 10 运行时
+            
+            #### macOS (x64)
+            - **Self-Contained**: `MusicDecrypt-osx-x64-selfcontained.tar.gz` - 包含 .NET 运行时，无需安装 .NET
+            - **Framework-Dependent**: `MusicDecrypt-osx-x64-framework-dependent.tar.gz` - 需要安装 .NET 10 运行时
+            
+            ### 🚀 快速使用
+            
+            #### Windows
+            ```powershell
+            # 解压后直接运行
+            .\MusicDecrypt.exe -i "input_file.ncm" -o "output_folder"
+            ```
+            
+            #### Linux/macOS
+            ```bash
+            # 解压
+            tar -xzf MusicDecrypt-*.tar.gz
+            
+            # 添加执行权限（如需要）
+            chmod +x MusicDecrypt
+            
+            # 运行
+            ./MusicDecrypt -i "input_file.ncm" -o "output_folder"
+            ```
+            
+            ### 📖 详细文档
+            
+            请查看 [README.md](https://github.com/zuozishi/ZStack.MusicDecryptLib/blob/main/ConsoleApp/README.md) 获取完整使用说明。
+            
+            ### ⚠️ 版本要求
+            
+            - **Self-Contained 版本**: 无需额外依赖，开箱即用
+            - **Framework-Dependent 版本**: 需要安装 [.NET 10 Runtime](https://dotnet.microsoft.com/download/dotnet/10.0)
+            
+            ### 🔒 安全提示
+            
+            本工具仅供学习和研究使用，请勿用于商业用途。解密后的音频文件仅供个人学习和备份，请尊重音乐版权，支持正版音乐。
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
