@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "ZStack.MusicDecryptLib.ConsoleApp": {
+      "commandName": "Project",
+      "commandLineArgs": "-i C:\\Users\\Zuozishi\\Desktop\\Music\\test\r\n-o C:\\Users\\Zuozishi\\Desktop\\Music\\Output\r\n-w"
+    }
+  }
+}

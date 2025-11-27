@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/解决方案项/">
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="ConsoleApp/MusicDecryptConsoleApp.csproj" />
+  <Project Path="ZStack.MusicDecryptLib/ZStack.MusicDecryptLib.csproj" />
+</Solution>

@@ -1,0 +1,52 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+		<LangVersion>13</LangVersion>
+
+		<!-- NuGet Package Configuration -->
+		<PackageId>ZStack.MusicDecryptLib</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Zuozishi</Authors>
+		<Company>ZStack</Company>
+		<Product>ZStack.MusicDecryptLib</Product>
+		<Description>一个用于解密各种音乐平台加密音乐文件的 .NET 库（支持 NCM、KGM、KGG 格式）。支持网易云音乐（.ncm）、酷狗音乐（.kgm、.kgma、.kgg）加密格式。</Description>
+		<PackageTags>music;decrypt;ncm;kgm;kgg;netease;kugou;audio</PackageTags>
+		<PackageProjectUrl>https://github.com/zuozishi/ZStack.MusicDecryptLib</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/zuozishi/ZStack.MusicDecryptLib</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>icon.png</PackageIcon>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<IncludeSymbols>true</IncludeSymbols>
+		<EmbedUntrackedSources>true</EmbedUntrackedSources>
+		<DebugType>embedded</DebugType>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true'">
+		<ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+	</PropertyGroup>
+
+	<!-- 本地构建时禁用 SourceLink -->
+	<PropertyGroup Condition="'$(GITHUB_ACTIONS)' != 'true'">
+		<EnableSourceLink>false</EnableSourceLink>
+		<EnableSourceControlManagerQueries>false</EnableSourceControlManagerQueries>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="TagLibSharp" Version="2.3.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="icon.png" Pack="true" PackagePath="\" />
+		<None Include="README.md" Pack="true" PackagePath="\" />
+	</ItemGroup>
+
+</Project>
