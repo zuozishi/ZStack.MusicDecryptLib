@@ -49,7 +49,7 @@ jobs:
           dotnet publish ConsoleApp/MusicDecryptConsoleApp.csproj \
             -c Release \
             -r ${{ matrix.runtime }} \
-            --self-contained true \
+            --self-contained \
             -p:PublishSingleFile=true \
             -p:IncludeNativeLibrariesForSelfExtract=true \
             -p:PublishTrimmed=false \
@@ -61,7 +61,7 @@ jobs:
           dotnet publish ConsoleApp/MusicDecryptConsoleApp.csproj \
             -c Release \
             -r ${{ matrix.runtime }} \
-            --self-contained false \
+            --no-self-contained \
             -p:PublishSingleFile=true \
             -o ./publish-fd-${{ matrix.runtime }}
       
